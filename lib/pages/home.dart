@@ -253,7 +253,24 @@ class _HomeState extends State<Home> {
           ],
         ),
         SizedBox(height: 140),
-        button()
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            RaisedButton(
+              onPressed: () {
+                setState(() {
+                  notificationString = "Checking...";
+                });
+                test(_phoneController.text, _nameController.text, _ivrcodeController.text);
+              },
+              padding: const EdgeInsets.all(10),
+              color: Colors.blue,
+              textColor: Colors.white,
+              child: Text('Check')
+            ),
+            button()
+          ],
+        )
       ],
     );
   }
@@ -369,6 +386,21 @@ class _HomeState extends State<Home> {
         print('failed to update');
       }
     }
+  }
+
+  void test(String phone, String name, String ivrcode) async {
+    String url = 'https://drugs.shaheermirza.dev/test/';
+
+    String json = convert.jsonEncode({
+      'phone' : phone,
+      'last_name' : name,
+      'ivr_code' : ivrcode,
+      'token': this.token
+    });
+
+    http.post(url, body: json, headers: {
+      'Content-Type': 'application/json'
+    });
   }
 }
 
