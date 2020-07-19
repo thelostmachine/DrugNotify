@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:device_info/device_info.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -35,9 +37,11 @@ class _HomeState extends State<Home> {
 
   String notificationString = 'No Data Available. Wait until 6am';
 
+  String _uniqueIdentifier = '';
+
   String receivedNotification;
 
-  String token;
+  Future<String> _token;
 
   @override
   void initState() {
@@ -82,29 +86,31 @@ class _HomeState extends State<Home> {
       print('Settings registered: $settings');
     });
 
-    _firebaseMessaging.getToken().then((token) {
+    _token = _firebaseMessaging.getToken().then((token) {
       assert(token != null);
       print('Token: $token');
 
-      setState(() {
-        this.token = token;
-      });
-
+      return token;
     });
 
+    // _prefs.then((SharedPreferences prefs) {
+    //   final String phone = prefs.get(phoneKey) ?? 'None';
+    //   final String name = prefs.get(nameKey) ?? 'None';
+    //   final String ivrcode = prefs.get(codeKey) ?? 'None';
+
+    //   if (phone == 'None' || name == 'None' || ivrcode == 'None') {
+    //     setState(() {
+    //       _editing = true;
+    //     });
+    //   } else {
+    //     _phoneController = TextEditingController(text: phone);
+    //     _nameController = TextEditingController(text: name);
+    //     _ivrcodeController = TextEditingController(text: ivrcode);
+    //   }
+    // });
+    
     _phone = _prefs.then((SharedPreferences prefs) {
-      return prefs.get(phoneKey) ?? 'None';
-    });
-
-    _name = _prefs.then((SharedPreferences prefs) {
-      return prefs.get(nameKey) ?? 'None';
-    });
-
-    _ivrcode = _prefs.then((SharedPreferences prefs) {
-      return prefs.get(codeKey) ?? 'None';
-    });
-
-    _phone.then((phone) {
+      var phone = prefs.get(phoneKey) ?? 'None';
       if (phone == 'None') {
         setState(() {
           _editing = true;
@@ -112,9 +118,13 @@ class _HomeState extends State<Home> {
       } else {
         _phoneController = TextEditingController(text: phone);
       }
+
+      return phone;
     });
 
-    _name.then((name) {
+    _name = _prefs.then((SharedPreferences prefs) {
+      var name = prefs.get(nameKey) ?? 'None';
+
       if (name == 'None') {
         setState(() {
           _editing = true;
@@ -122,17 +132,64 @@ class _HomeState extends State<Home> {
       } else {
         _nameController = TextEditingController(text: name);
       }
+
+      return name;
     });
 
-    _ivrcode.then((ivrcode) {
-      if (ivrcode == 'None') {
+    _ivrcode = _prefs.then((SharedPreferences prefs) {
+      var ivrCode = prefs.get(codeKey) ?? 'None';
+
+      if (ivrCode == 'None') {
         setState(() {
           _editing = true;
         });
       } else {
-        _ivrcodeController = TextEditingController(text: ivrcode);
+        _ivrcodeController = TextEditingController(text: ivrCode);
       }
+
+      return ivrCode;
     });
+
+    // _phone.then((phone) {
+    //   if (phone == 'None') {
+    //     setState(() {
+    //       _editing = true;
+    //     });
+    //   } else {
+    //     _phoneController = TextEditingController(text: phone);
+    //   }
+    // });
+
+    // _name.then((name) {
+    //   if (name == 'None') {
+    //     setState(() {
+    //       _editing = true;
+    //     });
+    //   } else {
+    //     _nameController = TextEditingController(text: name);
+    //   }
+    // });
+
+    // _ivrcode.then((ivrcode) {
+    //   if (ivrcode == 'None') {
+    //     setState(() {
+    //       _editing = true;
+    //     });
+    //   } else {
+    //     _ivrcodeController = TextEditingController(text: ivrcode);
+    //   }
+    // });
+
+    getDeviceDetails().then((identifier) {
+      setState(() {
+        notificationString = identifier;
+        _uniqueIdentifier = identifier;
+      });
+      print('checking');
+      checkUserForUpdates();
+    });
+    
+
   }
 
   @override
@@ -363,8 +420,11 @@ class _HomeState extends State<Home> {
       'phone' : phone,
       'last_name' : name,
       'ivr_code' : ivrcode,
-      'token': this.token
+      'token': await _token,
+      // 'token' : 'hello',
+      'identifier': this._uniqueIdentifier
     });
+    print(json);
 
     final response = await http.post(url, body: json, headers: {
       'Content-Type': 'application/json'
@@ -373,8 +433,11 @@ class _HomeState extends State<Home> {
     if (response.statusCode == 200) {
       print('success');
     } else {
-      final existing = await http.get(url + '?search=$token');
-      var id = convert.jsonDecode(existing.body)[0]['id'];
+      // Record already exists in DB, so replace the token in the DB
+      print('here');
+
+      final existing = await http.get(url + '?search=$_uniqueIdentifier');
+      var id = convert.jsonDecode(existing.body)[0]['identifier'];
 
       final putResponse = await http.put(url + '$id/', body: json, headers: {
         'Content-Type': 'application/json'
@@ -395,52 +458,86 @@ class _HomeState extends State<Home> {
       'phone' : phone,
       'last_name' : name,
       'ivr_code' : ivrcode,
-      'token': this.token
+      'token': await _token
     });
 
-    http.post(url, body: json, headers: {
+    var request = await http.post(url, body: json, headers: {
       'Content-Type': 'application/json'
     });
-  }
-}
 
-/// Format incoming numeric text to fit the format of (###) ###-#### ##...
-class _UsNumberTextInputFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue
-  ) {
-    final int newTextLength = newValue.text.length;
-    int selectionIndex = newValue.selection.end;
-    int usedSubstringIndex = 0;
-    final StringBuffer newText = StringBuffer();
-    if (newTextLength >= 1) {
-      newText.write('(');
-      if (newValue.selection.end >= 1)
-        selectionIndex++;
+    if (request.statusCode == 200) {
+      var response = convert.jsonDecode(request.body);
+      print(response);
     }
-    if (newTextLength >= 4) {
-      newText.write(newValue.text.substring(0, usedSubstringIndex = 3) + ') ');
-      if (newValue.selection.end >= 3)
-        selectionIndex += 2;
+
+  }
+  final url = 'https://drugs.shaheermirza.dev/';
+
+  void checkUserForUpdates() async {
+    final String phone = _phoneController.text ?? 'None';
+    final String name = _nameController.text ?? 'None';
+    final String ivrCode = _ivrcodeController.text ?? 'None';
+
+    final request = await http.get('https://drugs.shaheermirza.dev/users/?search=$_uniqueIdentifier', headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    });
+
+    if (request.statusCode == 200) {
+      var response = convert.jsonDecode(request.body);
+      print('found $response');
+      String thisToken = await _token;
+      if (response != null) {
+        if (response[0]['token'] != thisToken) {
+          print(thisToken);
+          final putResponse = await http.put(url + 'users/$_uniqueIdentifier/', body: generateJson(phone, name, ivrCode, thisToken), headers: {
+            'Content-Type': 'application/json'
+          });
+
+          if (putResponse.statusCode == 200) {
+            print('update success');
+          } else {
+            print ('update fail');
+          }
+        }
+      } else {
+        print(response);
+      }
+    } else {
+      print('nothing found');
     }
-    if (newTextLength >= 7) {
-      newText.write(newValue.text.substring(3, usedSubstringIndex = 6) + '-');
-      if (newValue.selection.end >= 6)
-        selectionIndex++;
+  }
+
+  String generateJson(String phone, String name, String ivrCode, String token) {
+    String json = convert.jsonEncode({
+      'phone' : phone,
+      'last_name' : name,
+      'ivr_code' : ivrCode,
+      'token': token,
+      'identifier': _uniqueIdentifier
+    });
+
+    return json;
+  }
+
+
+  static Future<String> getDeviceDetails() async {
+    String identifier;
+    final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
+
+    try {
+      if (Platform.isAndroid) {
+        var build = await deviceInfoPlugin.androidInfo;
+        identifier = build.androidId;
+      }
+      else if (Platform.isIOS) {
+        var data = await deviceInfoPlugin.iosInfo;
+        identifier = data.identifierForVendor;
+      }
+    } on PlatformException {
+      print('Failed to get platform version');
     }
-    if (newTextLength >= 11) {
-      newText.write(newValue.text.substring(6, usedSubstringIndex = 10) + ' ');
-      if (newValue.selection.end >= 10)
-        selectionIndex++;
-    }
-    // Dump the rest.
-    if (newTextLength >= usedSubstringIndex)
-      newText.write(newValue.text.substring(usedSubstringIndex));
-    return TextEditingValue(
-      text: newText.toString(),
-      selection: TextSelection.collapsed(offset: selectionIndex),
-    );
+
+    return identifier;
   }
 }
