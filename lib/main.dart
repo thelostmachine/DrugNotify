@@ -2,6 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+import 'package:DrugNotify/pages/check.dart';
+import 'package:DrugNotify/pages/history.dart';
 import 'package:DrugNotify/pages/home.dart';
 import 'package:flutter/material.dart';
 
@@ -11,7 +13,27 @@ void main() {
       initialRoute: '/home',
       routes: {
         '/home': (context) => Home(),
-      }
+        '/check': (context) => Check(),
+        '/history': (context) => HistoryPage(),
+      },
+      theme: ThemeData(
+        fontFamily: 'Montserrat',
+        primaryTextTheme: TextTheme(
+          headline6: TextStyle(
+            fontSize: 42,
+            fontWeight: FontWeight.w200,
+            color: Colors.white)
+        ),
+        scaffoldBackgroundColor: Color(0xFFE8EDDF),
+        primaryColor: Color(0xFF134611),
+        accentColor: Color(0xFFD64045),
+        bottomNavigationBarTheme: BottomNavigationBarThemeData(
+          selectedItemColor: Color(0xFFD64045),
+          unselectedItemColor: Color(0x66E8EDDF),
+          backgroundColor: Color(0xFF134611),
+        ),
+        buttonColor: Color(0xFF134611)
+      ),
     ),
   );
 }
