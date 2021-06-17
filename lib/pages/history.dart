@@ -11,28 +11,29 @@ import 'dart:convert' as convert;
 import 'package:intl/intl.dart';
 
 class HistoryPage extends StatefulWidget {
-
   @override
   _HistoryPageState createState() => _HistoryPageState();
 }
 
 class _HistoryPageState extends State<HistoryPage> {
   final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
-  final String url = kReleaseMode ? 'https://drugs.shaheermirza.dev/tests/' : 'http://192.168.0.2:8000/tests/';
+  final String url = (kReleaseMode)
+      ? 'https://drugnotify.herokuapp.com/'
+      : 'http://192.168.0.19:8000/';
   String _identifier;
 
-  static Widget _testIcon = Container(
-    decoration: new BoxDecoration(
-      color: Color(0xFFD64045).withAlpha(225)
-    ),
-  );
+  // static Widget _testIcon = Container(
+  //   decoration: new BoxDecoration(
+  //     color: Color(0xFFD64045).withAlpha(225)
+  //   ),
+  // );
 
   Future fetchHistory() async {
     final response = await http.get(url + '?search=$_identifier', headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json'
     });
-    
+
     if (response.statusCode == 200) {
       return convert.jsonDecode(response.body) as List;
     } else {
@@ -49,18 +50,18 @@ class _HistoryPageState extends State<HistoryPage> {
         if (testing) {
           String dateString = s['date_checked'];
           DateTime date = DateFormat('yyyy-MM-dd').parse(dateString);
-          datesChecked.add(date, Event(
-            date: date,
-            title: 'No',
-            icon: Container(
-              decoration: new BoxDecoration(
-                color: Color(0xFFD64045).withAlpha(225)
-              ),
-            )
-          ));
+          datesChecked.add(
+              date,
+              Event(
+                  date: date,
+                  title: 'No',
+                  icon: Container(
+                    decoration: new BoxDecoration(
+                        color: Color(0xFFD64045).withAlpha(225)),
+                  )));
         }
       }
-      
+
       setState(() {
         _markedDateMap = datesChecked;
         print('set');
@@ -86,18 +87,18 @@ class _HistoryPageState extends State<HistoryPage> {
         if (testing) {
           String dateString = s['date_checked'];
           DateTime date = DateFormat('yyyy-MM-dd').parse(dateString);
-          datesChecked.add(date, Event(
-            date: date,
-            title: 'No',
-            icon: Container(
-              decoration: new BoxDecoration(
-                color: Color(0xFFD64045).withAlpha(225)
-              ),
-            )
-          ));
+          datesChecked.add(
+              date,
+              Event(
+                  date: date,
+                  title: 'No',
+                  icon: Container(
+                    decoration: new BoxDecoration(
+                        color: Color(0xFFD64045).withAlpha(225)),
+                  )));
         }
       }
-      
+
       setState(() {
         _markedDateMap = datesChecked;
         for (var v in _markedDateMap.events.keys) {
@@ -120,7 +121,7 @@ class _HistoryPageState extends State<HistoryPage> {
       });
       loadHistory();
     });
-    
+
     super.initState();
   }
 
@@ -150,7 +151,7 @@ class _HistoryPageState extends State<HistoryPage> {
       nextDaysTextStyle: TextStyle(
         color: Colors.grey,
         fontSize: 16,
-        fontWeight: FontWeight.w300
+        fontWeight: FontWeight.w300,
       ),
 
       prevDaysTextStyle: TextStyle(
@@ -158,7 +159,7 @@ class _HistoryPageState extends State<HistoryPage> {
         fontSize: 16,
         fontWeight: FontWeight.w300,
       ),
-      
+
       daysTextStyle: TextStyle(
         color: Colors.black,
         fontSize: 20,
@@ -169,7 +170,7 @@ class _HistoryPageState extends State<HistoryPage> {
       markedDateIconBuilder: (event) {
         return event.icon;
       },
-      
+
       markedDateCustomTextStyle: TextStyle(
         color: Colors.white,
         fontSize: 20,
@@ -197,10 +198,9 @@ class _HistoryPageState extends State<HistoryPage> {
       selectedDayTextStyle: TextStyle(
         color: Colors.white,
         fontSize: 20,
-        fontWeight: FontWeight.w300
+        fontWeight: FontWeight.w300,
       ),
       selectedDayButtonColor: Colors.amber,
-      
 
       todayTextStyle: TextStyle(
         color: Colors.white,
@@ -210,7 +210,7 @@ class _HistoryPageState extends State<HistoryPage> {
       todayButtonColor: Colors.transparent,
       todayBorderColor: Colors.transparent,
     );
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text('History'),
@@ -218,7 +218,8 @@ class _HistoryPageState extends State<HistoryPage> {
           IconButton(
             tooltip: 'Refresh',
             icon: Icon(Icons.refresh),
-            onPressed: _handleRefresh),
+            onPressed: _handleRefresh,
+          ),
         ],
       ),
       body: RefreshIndicator(
@@ -227,13 +228,11 @@ class _HistoryPageState extends State<HistoryPage> {
           physics: CustomClampScrollPhysics(),
           child: Container(
             child: Column(
-              children: [
-                _calendarCarousel
-              ],
+              children: [_calendarCarousel],
             ),
-            height: MediaQuery.of(context).size.height
-          )
-        )
+            height: MediaQuery.of(context).size.height,
+          ),
+        ),
       ),
     );
   }
