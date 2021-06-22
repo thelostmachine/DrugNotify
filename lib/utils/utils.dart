@@ -6,6 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
+final String baseUrl = (kReleaseMode)
+    ? 'https://drugnotify.herokuapp.com'
+    : 'http://192.168.0.19:8000';
+
 Future<String> getDeviceDetails() async {
   String identifier;
   final DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
@@ -14,8 +18,7 @@ Future<String> getDeviceDetails() async {
     if (Platform.isAndroid) {
       var build = await deviceInfoPlugin.androidInfo;
       identifier = build.androidId;
-    }
-    else if (Platform.isIOS) {
+    } else if (Platform.isIOS) {
       var data = await deviceInfoPlugin.iosInfo;
       identifier = data.identifierForVendor;
     }
@@ -27,7 +30,6 @@ Future<String> getDeviceDetails() async {
 }
 
 class CustomClampScrollPhysics extends ScrollPhysics {
-
   CustomClampScrollPhysics({ScrollPhysics parent}) : super(parent: parent);
 
   @override
@@ -40,27 +42,32 @@ class CustomClampScrollPhysics extends ScrollPhysics {
     assert(() {
       if (value == position.pixels) {
         throw FlutterError.fromParts(<DiagnosticsNode>[
-          ErrorSummary('$runtimeType.applyBoundaryConditions() was called redundantly.'),
+          ErrorSummary(
+              '$runtimeType.applyBoundaryConditions() was called redundantly.'),
           ErrorDescription(
-            'The proposed new position, $value, is exactly equal to the current position of the '
-            'given ${position.runtimeType}, ${position.pixels}.\n'
-            'The applyBoundaryConditions method should only be called when the value is '
-            'going to actually change the pixels, otherwise it is redundant.'
-          ),
-          DiagnosticsProperty<ScrollPhysics>('The physics object in question was', this, style: DiagnosticsTreeStyle.errorProperty),
-          DiagnosticsProperty<ScrollMetrics>('The position object in question was', position, style: DiagnosticsTreeStyle.errorProperty)
+              'The proposed new position, $value, is exactly equal to the current position of the '
+              'given ${position.runtimeType}, ${position.pixels}.\n'
+              'The applyBoundaryConditions method should only be called when the value is '
+              'going to actually change the pixels, otherwise it is redundant.'),
+          DiagnosticsProperty<ScrollPhysics>(
+              'The physics object in question was', this,
+              style: DiagnosticsTreeStyle.errorProperty),
+          DiagnosticsProperty<ScrollMetrics>(
+              'The position object in question was', position,
+              style: DiagnosticsTreeStyle.errorProperty)
         ]);
       }
       return true;
     }());
-    if (position.pixels < value)
+    if (position.pixels < value) return value - position.pixels;
+
+    if (value < position.pixels &&
+        position.pixels <= position.minScrollExtent) // underscroll
       return value - position.pixels;
-      
-    if (value < position.pixels && position.pixels <= position.minScrollExtent) // underscroll
-      return value - position.pixels;
-    if (value < position.minScrollExtent && position.minScrollExtent < position.pixels) // hit top edge
+    if (value < position.minScrollExtent &&
+        position.minScrollExtent < position.pixels) // hit top edge
       return value - position.minScrollExtent;
-      
+
     return 0.0;
   }
 }

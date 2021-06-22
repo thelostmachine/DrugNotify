@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:DrugNotify/utils/utils.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_calendar_carousel/classes/event.dart';
 import 'package:flutter_calendar_carousel/flutter_calendar_carousel.dart';
@@ -17,9 +16,10 @@ class HistoryPage extends StatefulWidget {
 
 class _HistoryPageState extends State<HistoryPage> {
   final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
-  final String url = (kReleaseMode)
-      ? 'https://drugnotify.herokuapp.com/'
-      : 'http://192.168.0.19:8000/';
+  // final String baseUrl = (kReleaseMode)
+  //     ? 'https://drugnotify.herokuapp.com/'
+  //     : 'http://192.168.0.19:8000/';
+
   String _identifier;
 
   // static Widget _testIcon = Container(
@@ -29,12 +29,17 @@ class _HistoryPageState extends State<HistoryPage> {
   // );
 
   Future fetchHistory() async {
-    final response = await http.get(url + '?search=$_identifier', headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    });
+    print(_identifier);
+    final response = await http.get(
+      '$baseUrl/tests?search=$_identifier',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+    );
 
     if (response.statusCode == 200) {
+      print(response.body);
       return convert.jsonDecode(response.body) as List;
     } else {
       throw Exception('Failed to load history');
@@ -51,14 +56,17 @@ class _HistoryPageState extends State<HistoryPage> {
           String dateString = s['date_checked'];
           DateTime date = DateFormat('yyyy-MM-dd').parse(dateString);
           datesChecked.add(
-              date,
-              Event(
-                  date: date,
-                  title: 'No',
-                  icon: Container(
-                    decoration: new BoxDecoration(
-                        color: Color(0xFFD64045).withAlpha(225)),
-                  )));
+            date,
+            Event(
+              date: date,
+              title: 'No',
+              icon: Container(
+                decoration: new BoxDecoration(
+                  color: Color(0xFFD64045).withAlpha(225),
+                ),
+              ),
+            ),
+          );
         }
       }
 
@@ -88,14 +96,17 @@ class _HistoryPageState extends State<HistoryPage> {
           String dateString = s['date_checked'];
           DateTime date = DateFormat('yyyy-MM-dd').parse(dateString);
           datesChecked.add(
-              date,
-              Event(
-                  date: date,
-                  title: 'No',
-                  icon: Container(
-                    decoration: new BoxDecoration(
-                        color: Color(0xFFD64045).withAlpha(225)),
-                  )));
+            date,
+            Event(
+              date: date,
+              title: 'No',
+              icon: Container(
+                decoration: new BoxDecoration(
+                  color: Color(0xFFD64045).withAlpha(225),
+                ),
+              ),
+            ),
+          );
         }
       }
 
